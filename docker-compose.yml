@@ -1,0 +1,56 @@
+version: '3'
+services:
+  namenode:
+    build: ./namenode
+    container_name: hadoop-namenode
+    hostname: namenode
+    environment:
+      - HDFS_CONF_dfs_replication=1
+    volumes:
+      - hadoop_data:/usr/local/hadoop/data
+      - ./namenode/hadoop-config:/usr/local/hadoop/etc/hadoop
+    networks:
+      - hadoop_net
+
+  datanode:
+    build: ./datanode
+    container_name: hadoop-datanode
+    hostname: datanode
+    depends_on:
+      - namenode
+    environment:
+      - HDFS_CONF_dfs_replication=1
+    volumes:
+      - hadoop_data:/usr/local/hadoop/data
+      - ./datanode/hadoop-config:/usr/local/hadoop/etc/hadoop
+    networks:
+      - hadoop_net
+
+  resourcemanager:
+    build: ./resourcemanager
+    container_name: hadoop-resourcemanager
+    hostname: resourcemanager
+    depends_on:
+      - namenode
+    volumes:
+      - ./resourcemanager/hadoop-config:/usr/local/hadoop/etc/hadoop
+    networks:
+      - hadoop_net
+
+  nodemanager:
+    build: ./nodemanager
+    container_name: hadoop-nodemanager
+    hostname: nodemanager
+    depends_on:
+      - resourcemanager
+    volumes:
+      - ./nodemanager/hadoop-config:/usr/local/hadoop/etc/hadoop
+    networks:
+      - hadoop_net
+
+networks:
+  hadoop_net:
+    driver: bridge
+
+volumes:
+  hadoop_data:
