@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    environment:
+      - CLUSTER_NAME=test-cluster
+      - HADOOP_HEAPSIZE=1024         # Increase heap size for Namenode
+      - HDFS_NAMENODE_OPTS=-Xms512m -Xmx1024m  # Increase Java heap for Namenode
+    ports:
+      - "9870:9870"   # HDFS Web UI
+      - "9000:9000"   # NameNode RPC
+    volumes:
+      - namenode-data:/hadoop/dfs/name
+    networks:
+      - hadoop
+    deploy:
+      resources:
+        limits:
+          memory: 4g          # Increased memory limit for Namenode
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    environment:
+      - CLUSTER_NAME=test-cluster
+      - HADOOP_HEAPSIZE=1024         # Increase heap size for Datanode
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    volumes:
+      - datanode-data:/hadoop/dfs/data
+    ports:
+      - "9864:9864"  # DataNode Web UI
+    depends_on:
+      - namenode
+    networks:
+      - hadoop
+    deploy:
+      resources:
+        limits:
+          memory: 4g          # Increased memory limit for Datanode
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    environment:
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    ports:
+      - "8088:8088"  # YARN Web UI
+    depends_on:
+      - namenode
+    networks:
+      - hadoop
+    deploy:
+      resources:
+        limits:
+          memory: 4g          # Increased memory limit for ResourceManager
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    environment:
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - resourcemanager
+    networks:
+      - hadoop
+    deploy:
+      resources:
+        limits:
+          memory: 4g          # Increased memory limit for NodeManager
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+volumes:
+  namenode-data:
+  datanode-data:
+
+networks:
+  hadoop:
+    driver: bridge
